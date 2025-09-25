@@ -96,9 +96,9 @@ function App() {
           </Col>
           <Col xs={12} md={9} lg={10} className="p-4">
             <div className="mb-4">
-              <Button variant="outline-primary" size="sm" onClick={navigateToHome} className="mb-3">
+              {/* <Button variant="outline-primary" size="sm" onClick={navigateToHome} className="mb-3">
                 ← Back to Home
-              </Button>
+              </Button> */}
               <h4 className="text-capitalize">{activeTab} Management</h4>
             </div>
             {renderContent()}
