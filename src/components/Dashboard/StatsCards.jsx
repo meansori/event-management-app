@@ -29,10 +29,10 @@ const StatsCards = () => {
         accountsAPI.getAll().catch(() => ({ data: [] })),
       ]);
 
-      const events = eventsRes.data || [];
+      const events = eventsRes.data.data || [];
       const now = new Date();
 
-      const ongoingEvents = events.filter((event) => {
+      const ongoingEvents = events.data.filter((event) => {
         try {
           const start = new Date(event.start_time);
           const end = new Date(event.end_time);
@@ -42,7 +42,7 @@ const StatsCards = () => {
         }
       }).length;
 
-      const upcomingEvents = events.filter((event) => {
+      const upcomingEvents = events.data.filter((event) => {
         try {
           const start = new Date(event.start_time);
           return now < start;

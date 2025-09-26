@@ -2,53 +2,45 @@ import axios from "axios";
 
 const API_BASE_URL = "http://localhost:4000/api/v1";
 
+// Create axios instance
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
   },
-  timeout: 10000, // 10 seconds timeout
 });
 
-// Request interceptor
-api.interceptors.request.use(
-  (config) => {
-    console.log("🔄 API Request:", config.method?.toUpperCase(), config.url);
-    return config;
-  },
-  (error) => {
-    console.error("❌ Request Error:", error);
-    return Promise.reject(error);
-  }
-);
-
-// Response interceptor dengan error handling yang lebih baik
+// Interceptor untuk handle response structure
 api.interceptors.response.use(
   (response) => {
-    console.log("✅ API Response:", response.status, response.config.url);
+    // Pastikan response memiliki structure yang konsisten
+    if (response.data && typeof response.data.success === "undefined") {
+      response.data = {
+        success: true,
+        data: response.data,
+      };
+    }
     return response;
   },
   (error) => {
-    console.error("❌ Response Error:", error);
-
-    // Enhanced error handling
-    if (error.response) {
-      // Server responded with error status
-      console.error("Error Data:", error.response.data);
-      console.error("Error Status:", error.response.status);
-    } else if (error.request) {
-      // Request made but no response received
-      console.error("No response received:", error.request);
-    } else {
-      // Something else happened
-      console.error("Error:", error.message);
+    if (error.response?.status === 401) {
+      // localStorage.removeItem("authToken");
+      // localStorage.removeItem("user");
+      // window.location.href = "/#home";
     }
-
     return Promise.reject(error);
   }
 );
 
-// API functions dengan fallback data
+// Auth API
+export const authAPI = {
+  login: (credentials) => api.post("/auth/login", credentials),
+  logout: () => api.post("/auth/logout"),
+  getProfile: () => api.get("/auth/profile"),
+  verifyToken: () => api.get("/auth/verify"),
+};
+
+// Existing APIs...
 export const dashboardAPI = {
   getStats: () => api.get("/dashboard"),
 };

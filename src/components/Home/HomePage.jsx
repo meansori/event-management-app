@@ -1,33 +1,63 @@
 import { useState, useEffect } from "react";
-import { Container, Row, Col, Card, Button, Badge, Modal, Form, Spinner, Alert } from "react-bootstrap";
-import { eventsAPI, participantsAPI, accountsAPI } from "../../services/api";
+import { Container, Row, Col, Card, Button, Badge, Modal, Alert, Navbar, Nav } from "react-bootstrap";
+import { eventsAPI, participantsAPI, accountsAPI, authAPI } from "../../services/api";
+import LoginModal from "./LoginModal";
+import RegisterModal from "./RegisterModal";
 import "./HomePage.css";
 
 const HomePage = ({ onNavigateToAdmin }) => {
-  const [events, setEvents] = useState([]);
-  const [stats, setStats] = useState({
-    totalEvents: 0,
-    totalParticipants: 0,
-    totalAccounts: 0,
-    ongoingEvents: 0,
-    upcomingEvents: 0,
-  });
+  // const [events, setEvents] = useState([]);
+  // const [stats, setStats] = useState({
+  //   totalEvents: 0,
+  //   totalParticipants: 0,
+  //   totalAccounts: 0,
+  //   ongoingEvents: 0,
+  //   upcomingEvents: 0,
+  // });
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [selectedEvent, setSelectedEvent] = useState(null);
-  const [showModal, setShowModal] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
+  // const [error, setError] = useState(null);
+  // const [selectedEvent, setSelectedEvent] = useState(null);
+  // const [showEventModal, setShowEventModal] = useState(false);
+  // const [searchTerm, setSearchTerm] = useState("");
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showRegisterModal, setShowRegisterModal] = useState(false);
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
     fetchData();
+    checkAuthStatus();
   }, []);
+
+  const checkAuthStatus = () => {
+    const token = localStorage.getItem("authToken");
+    const userData = localStorage.getItem("user");
+
+    if (token && userData) {
+      try {
+        setUser(JSON.parse(userData));
+        // Verify token is still valid
+        verifyToken();
+      } catch (error) {
+        console.error("Error parsing user data:", error);
+        logout();
+      }
+    }
+  };
+
+  const verifyToken = async () => {
+    try {
+      await authAPI.verifyToken();
+    } catch (error) {
+      console.error("Token verification failed:", error);
+      logout();
+    }
+  };
 
   const fetchData = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      // Fetch semua data paralel
       const [eventsRes, participantsRes, accountsRes] = await Promise.all([
         eventsAPI.getAll().catch(() => ({ data: [] })),
         participantsAPI.getAll().catch(() => ({ data: [] })),
@@ -37,9 +67,8 @@ const HomePage = ({ onNavigateToAdmin }) => {
       const eventsData = eventsRes.data.data || [];
       setEvents(eventsData);
 
-      // Hitung statistik
       const now = new Date();
-      const ongoingEvents = eventsData.filter((event) => {
+      const ongoingEvents = eventsData.data.filter((event) => {
         try {
           const start = new Date(event.start_time);
           const end = new Date(event.end_time);
@@ -49,7 +78,7 @@ const HomePage = ({ onNavigateToAdmin }) => {
         }
       }).length;
 
-      const upcomingEvents = eventsData.filter((event) => {
+      const upcomingEvents = eventsData.data.filter((event) => {
         try {
           const start = new Date(event.start_time);
           return now < start;
@@ -68,57 +97,82 @@ const HomePage = ({ onNavigateToAdmin }) => {
     } catch (error) {
       console.error("Error fetching data:", error);
       setError("Failed to load data. Using sample data for demonstration.");
-      // Sample data untuk demo
       setEvents([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const getEventStatus = (startTime, endTime) => {
-    try {
-      const now = new Date();
-      const start = new Date(startTime);
-      const end = new Date(endTime);
+  const handleLogin = (userData) => {
+    setUser(userData);
+    setShowLoginModal(false);
+  };
 
-      if (now < start) return { type: "upcoming", label: "Upcoming", color: "warning" };
-      if (now >= start && now <= end) return { type: "ongoing", label: "Ongoing", color: "success" };
-      return { type: "completed", label: "Completed", color: "secondary" };
-    } catch {
-      return { type: "unknown", label: "Unknown", color: "secondary" };
+  const handleRegister = (userData) => {
+    setUser(userData);
+    setShowRegisterModal(false);
+  };
+
+  const logout = () => {
+    setUser(null);
+    localStorage.removeItem("authToken");
+    localStorage.removeItem("user");
+    // Optional: Call logout API
+    authAPI.logout().catch(console.error);
+  };
+
+  const handleAdminNavigation = () => {
+    if (user) {
+      onNavigateToAdmin();
+    } else {
+      setShowLoginModal(true);
     }
   };
 
-  const formatDateTime = (dateTime) => {
-    try {
-      return new Date(dateTime).toLocaleString("id-ID", {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-    } catch {
-      return "Invalid Date";
-    }
-  };
+  // const getEventStatus = (startTime, endTime) => {
+  //   try {
+  //     const now = new Date();
+  //     const start = new Date(startTime);
+  //     const end = new Date(endTime);
 
-  const filteredEvents = events.filter(
-    (event) =>
-      event.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      event.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      event.location?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  //     if (now < start) return { type: "upcoming", label: "Upcoming", color: "warning" };
+  //     if (now >= start && now <= end) return { type: "ongoing", label: "Ongoing", color: "success" };
+  //     return { type: "completed", label: "Completed", color: "secondary" };
+  //   } catch {
+  //     return { type: "unknown", label: "Unknown", color: "secondary" };
+  //   }
+  // };
 
-  const openEventDetail = (event) => {
-    setSelectedEvent(event);
-    setShowModal(true);
-  };
+  // const formatDateTime = (dateTime) => {
+  //   try {
+  //     return new Date(dateTime).toLocaleString("id-ID", {
+  //       weekday: "long",
+  //       year: "numeric",
+  //       month: "long",
+  //       day: "numeric",
+  //       hour: "2-digit",
+  //       minute: "2-digit",
+  //     });
+  //   } catch {
+  //     return "Invalid Date";
+  //   }
+  // };
 
-  const refreshData = () => {
-    fetchData();
-  };
+  // const filteredEvents = events.filter(
+  //   (event) =>
+  //     event.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  //     event.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  //     event.location?.toLowerCase().includes(searchTerm.toLowerCase())
+  // );
+
+  // const openEventDetail = (event) => {
+  //   setSelectedEvent(event);
+  //   setShowModal(true);
+  // };
+
+  // const refreshData = () => {
+  //   fetchData();
+  // };
 
   if (loading) {
     return (
@@ -131,16 +185,53 @@ const HomePage = ({ onNavigateToAdmin }) => {
 
   return (
     <div className="home-page">
-      {/* Hero Section */}
-      {/* <section className="hero-section">
+      <Navbar bg="white" expand="lg" className="shadow-sm fixed-top home-navbar">
         <Container>
-          <Row className="align-items-center min-vh-100">
+          <Navbar.Brand href="#home" className="fw-bold navbar-brand">
+            🎯 Event Management System
+          </Navbar.Brand>
+          <Navbar.Toggle aria-controls="basic-navbar-nav" />
+          <Navbar.Collapse id="basic-navbar-nav">
+            <Nav className="ms-auto">
+              {user ? (
+                <div className="d-flex align-items-center">
+                  <span className="user-welcome me-3">Welcome, {user.full_name}</span>
+                  <div className="d-flex gap-2">
+                    <Button variant="outline-primary" size="sm" onClick={handleAdminNavigation}>
+                      🛠️ Dashboard
+                    </Button>
+                    <Button variant="outline-secondary" size="sm" onClick={logout}>
+                      🚪 Logout
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="d-flex gap-2">
+                  <Button variant="outline-primary" onClick={() => setShowLoginModal(true)}>
+                    Sign In
+                  </Button>
+                  <Button variant="primary" onClick={() => setShowRegisterModal(true)}>
+                    Sign Up
+                  </Button>
+                </div>
+              )}
+            </Nav>
+          </Navbar.Collapse>
+        </Container>
+      </Navbar>
+      {/* Hero Section */}
+      <section className="hero-section" style={{ paddingTop: "100px" }}>
+        <Container>
+          {/* <Row className="align-items-center min-vh-100">
             <Col lg={6}>
               <h1 className="hero-title">
                 🎯 Event Management
                 <span className="gradient-text"> System</span>
               </h1>
-              <p className="hero-subtitle">Kelola dan pantau semua kegiatan Anda dalam satu platform yang modern dan efisien. Sistem manajemen event terintegrasi untuk kebutuhan organisasi Anda.</p>
+              <p className="hero-subtitle">
+                Kelola dan pantau semua kegiatan Anda dalam satu platform yang modern dan efisien. Sistem manajemen
+                event terintegrasi untuk kebutuhan organisasi Anda.
+              </p>
 
               <div className="hero-stats">
                 <div className="stat-item">
@@ -158,13 +249,28 @@ const HomePage = ({ onNavigateToAdmin }) => {
               </div>
 
               <div className="hero-actions">
-                <Button variant="light" size="lg" onClick={onNavigateToAdmin} className="me-3">
-                  🛠️ Admin Panel
+                <Button variant="primary" size="lg" onClick={handleAdminNavigation} className="me-3">
+                  {user ? "🛠️ Go to Dashboard" : "🔐 Sign In to Dashboard"}
                 </Button>
-                <Button variant="outline-light" size="lg" onClick={() => document.getElementById("events-section").scrollIntoView({ behavior: "smooth" })}>
+                <Button
+                  variant="outline-primary"
+                  size="lg"
+                  onClick={() => document.getElementById("events-section").scrollIntoView({ behavior: "smooth" })}
+                >
                   📅 View Events
                 </Button>
+                {!user && (
+                  <Button variant="success" size="lg" onClick={() => setShowRegisterModal(true)} className="ms-3">
+                    👤 Sign Up Free
+                  </Button>
+                )}
               </div>
+
+              {!user && (
+                <div className="mt-4">
+                  <small className="text-muted">🔒 Sign up now to access full management features</small>
+                </div>
+              )}
             </Col>
             <Col lg={6}>
               <div className="hero-graphic">
@@ -174,12 +280,12 @@ const HomePage = ({ onNavigateToAdmin }) => {
                 <div className="floating-card card-4">📊</div>
               </div>
             </Col>
-          </Row>
+          </Row> */}
         </Container>
-      </section> */}
+      </section>
 
       {/* Stats Section */}
-      <section className="stats-section">
+      {/* <section className="stats-section">
         <Container>
           <Row className="g-4">
             <Col md={3} sm={6}>
@@ -220,16 +326,18 @@ const HomePage = ({ onNavigateToAdmin }) => {
             </Col>
           </Row>
         </Container>
-      </section>
+      </section> */}
 
       {/* Events Section */}
       <section id="events-section" className="events-section">
         <Container>
-          <Row className="mb-5">
+          {/* <Row className="mb-5">
             <Col>
               <div className="section-header">
                 <h2 className="section-title">📅 All Events</h2>
-                <p className="section-subtitle">Temukan dan kelola semua kegiatan yang sedang berlangsung dan akan datang</p>
+                <p className="section-subtitle">
+                  Temukan dan kelola semua kegiatan yang sedang berlangsung dan akan datang
+                </p>
 
                 <div className="d-flex justify-content-between align-items-center flex-wrap gap-3">
                   <div className="search-container">
@@ -262,10 +370,10 @@ const HomePage = ({ onNavigateToAdmin }) => {
                 </Alert>
               )}
             </Col>
-          </Row>
+          </Row> */}
 
           {/* Events Grid */}
-          <Row className="g-4">
+          {/* <Row className="g-4">
             {filteredEvents.length === 0 ? (
               <Col>
                 <div className="no-events">
@@ -280,7 +388,9 @@ const HomePage = ({ onNavigateToAdmin }) => {
             ) : (
               filteredEvents.map((event) => {
                 const status = getEventStatus(event.start_time, event.end_time);
-                const eventDuration = Math.ceil((new Date(event.end_time) - new Date(event.start_time)) / (1000 * 60 * 60));
+                const eventDuration = Math.ceil(
+                  (new Date(event.end_time) - new Date(event.start_time)) / (1000 * 60 * 60)
+                );
 
                 return (
                   <Col key={event.id} lg={4} md={6}>
@@ -333,12 +443,12 @@ const HomePage = ({ onNavigateToAdmin }) => {
                 );
               })
             )}
-          </Row>
+          </Row> */}
         </Container>
       </section>
 
       {/* Event Detail Modal */}
-      <Modal show={showModal} onHide={() => setShowModal(false)} size="lg" centered>
+      {/* <Modal show={showModal} onHide={() => setShowModal(false)} size="lg" centered>
         <Modal.Header closeButton>
           <Modal.Title>Event Details</Modal.Title>
         </Modal.Header>
@@ -346,7 +456,9 @@ const HomePage = ({ onNavigateToAdmin }) => {
           {selectedEvent && (
             <div className="event-detail">
               <div className="detail-header">
-                <Badge bg={getEventStatus(selectedEvent.start_time, selectedEvent.end_time).color}>{getEventStatus(selectedEvent.start_time, selectedEvent.end_time).label}</Badge>
+                <Badge bg={getEventStatus(selectedEvent.start_time, selectedEvent.end_time).color}>
+                  {getEventStatus(selectedEvent.start_time, selectedEvent.end_time).label}
+                </Badge>
                 <h3>{selectedEvent.title}</h3>
               </div>
 
@@ -383,7 +495,7 @@ const HomePage = ({ onNavigateToAdmin }) => {
             Manage Events
           </Button>
         </Modal.Footer>
-      </Modal>
+      </Modal> */}
 
       {/* Footer */}
       <footer className="home-footer">
@@ -395,6 +507,26 @@ const HomePage = ({ onNavigateToAdmin }) => {
           </Row>
         </Container>
       </footer>
+      {/* Auth Modals */}
+      <LoginModal
+        show={showLoginModal}
+        onHide={() => setShowLoginModal(false)}
+        onLoginSuccess={handleLogin}
+        onSwitchToRegister={() => {
+          setShowLoginModal(false);
+          setShowRegisterModal(true);
+        }}
+      />
+
+      <RegisterModal
+        show={showRegisterModal}
+        onHide={() => setShowRegisterModal(false)}
+        onLoginSuccess={handleRegister}
+        onSwitchToLogin={() => {
+          setShowRegisterModal(false);
+          setShowLoginModal(true);
+        }}
+      />
     </div>
   );
 };

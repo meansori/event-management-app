@@ -28,21 +28,11 @@ const EventList = () => {
       setError(null);
       const response = await eventsAPI.getAll();
       console.log("📅 Events API Response:", response.data);
-      setEvents(response.data || []);
+      setEvents(response.data.data || []);
     } catch (error) {
       console.error("❌ Error fetching events:", error);
       setError("Failed to load events. Using sample data for demonstration.");
-      setEvents([
-        {
-          id: 1,
-          title: "Pengajian Remaja",
-          description: "Usia SMP",
-          location: "Masjid Nurul Hakim Lt 1",
-          start_time: "2024-12-28T08:00:00",
-          end_time: "2024-12-28T12:00:00",
-          created_by: 1,
-        },
-      ]);
+      setEvents([]);
     } finally {
       setLoading(false);
     }
@@ -134,7 +124,7 @@ const EventList = () => {
         <Card.Header className="bg-white d-flex justify-content-between align-items-center flex-wrap gap-3">
           <div>
             <h5 className="mb-0">Events Management</h5>
-            <small className="text-muted">Total: {filteredEvents.length} events</small>
+            {/* <small className="text-muted">Total: {filteredEvents.length} events</small> */}
           </div>
           <Button variant="primary" onClick={() => setShowForm(true)}>
             + Add Event
@@ -146,7 +136,12 @@ const EventList = () => {
             <Col md={6}>
               <Form.Group>
                 <Form.Label>Search Events</Form.Label>
-                <Form.Control type="text" placeholder="Search by title, description, or location..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                <Form.Control
+                  type="text"
+                  placeholder="Search by title, description, or location..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
               </Form.Group>
             </Col>
             <Col md={3}>
@@ -180,7 +175,10 @@ const EventList = () => {
 
           {filteredEvents.length === 0 ? (
             <div className="text-center p-5 text-muted">
-              <p>No events found. {searchTerm || statusFilter !== "all" ? "Try adjusting your filters." : "Create your first event!"}</p>
+              <p>
+                No events found.{" "}
+                {searchTerm || statusFilter !== "all" ? "Try adjusting your filters." : "Create your first event!"}
+              </p>
               {!searchTerm && statusFilter === "all" && (
                 <Button variant="primary" onClick={() => setShowForm(true)}>
                   Create First Event
