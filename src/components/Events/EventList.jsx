@@ -136,12 +136,7 @@ const EventList = () => {
             <Col md={6}>
               <Form.Group>
                 <Form.Label>Search Events</Form.Label>
-                <Form.Control
-                  type="text"
-                  placeholder="Search by title, description, or location..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
+                <Form.Control type="text" placeholder="Search by title, description, or location..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
               </Form.Group>
             </Col>
             <Col md={3}>
@@ -175,10 +170,7 @@ const EventList = () => {
 
           {filteredEvents.length === 0 ? (
             <div className="text-center p-5 text-muted">
-              <p>
-                No events found.{" "}
-                {searchTerm || statusFilter !== "all" ? "Try adjusting your filters." : "Create your first event!"}
-              </p>
+              <p>No events found. {searchTerm || statusFilter !== "all" ? "Try adjusting your filters." : "Create your first event!"}</p>
               {!searchTerm && statusFilter === "all" && (
                 <Button variant="primary" onClick={() => setShowForm(true)}>
                   Create First Event

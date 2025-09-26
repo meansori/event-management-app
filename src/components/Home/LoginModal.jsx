@@ -20,11 +20,10 @@ const LoginModal = ({ show, onHide, onLoginSuccess, onSwitchToRegister }) => {
 
       if (response.data.success) {
         // Simpan token dan user data
-        localStorage.setItem("authToken", response.data.data.token);
+        localStorage.setItem("token", response.data.data.token);
         localStorage.setItem("user", JSON.stringify(response.data.data.user));
 
         onLoginSuccess(response.data.data.user);
-        console.log("berhasil login");
 
         onHide();
       }
@@ -148,10 +147,10 @@ const LoginModal = ({ show, onHide, onLoginSuccess, onSwitchToRegister }) => {
             </div> */}
 
             <div className="auth-switch text-center mt-4">
-              <span className="text-muted">Don't have an account? </span>
-              <Button variant="link" className="auth-link p-0" onClick={onSwitchToRegister}>
+              {/* <span className="text-muted">Don't have an account? </span> */}
+              {/* <Button variant="link" className="auth-link p-0" onClick={onSwitchToRegister}>
                 Sign up here
-              </Button>
+              </Button> */}
             </div>
           </Card.Body>
         </Card>

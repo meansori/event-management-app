@@ -1,52 +1,75 @@
 import { useState, useEffect } from "react";
-import { Container, Row, Col, Button, Navbar, Nav } from "react-bootstrap";
+import { Container, Row, Col, Navbar, Nav, Button } from "react-bootstrap";
 import Header from "./components/Layout/Header";
 import Sidebar from "./components/Layout/Sidebar";
 import StatsCards from "./components/Dashboard/StatsCards";
 import EventList from "./components/Events/EventList";
 import AccountList from "./components/Accounts/AccountList";
 import ParticipantList from "./components/Participants/ParticipantList";
-import HomePage from "./components/Home/HomePage";
+import LandingPage from "./components/Landing/LandingPage";
+import StartupLanding from "./components/Landing/StartupLanding";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./index.css";
 
 function App() {
-  const [activeTab, setActiveTab] = useState("home");
-  const [showAdminPanel, setShowAdminPanel] = useState(false);
+  const [activeTab, setActiveTab] = useState("dashboard");
+  const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Handle navigation from URL hash
+  // Check authentication status on app start
   useEffect(() => {
-    const handleHashChange = () => {
-      const hash = window.location.hash.replace("#", "");
-      if (hash && ["dashboard", "events", "accounts", "participants", "home", "admin"].includes(hash)) {
-        setActiveTab(hash === "admin" ? "dashboard" : hash);
-        setShowAdminPanel(hash === "admin" || hash !== "home");
-      }
-    };
-
-    handleHashChange();
-    window.addEventListener("hashchange", handleHashChange);
-    return () => window.removeEventListener("hashchange", handleHashChange);
+    checkAuthStatus();
   }, []);
+
+  const checkAuthStatus = () => {
+    const token = localStorage.getItem("authToken");
+    const userData = localStorage.getItem("user");
+
+    if (token && userData) {
+      try {
+        setUser(JSON.parse(userData));
+      } catch (error) {
+        console.error("Error parsing user data:", error);
+        logout();
+      }
+    }
+    setIsLoading(false);
+  };
+
+  const handleLoginSuccess = (userData) => {
+    setUser(userData);
+    setActiveTab("dashboard");
+  };
+
+  const logout = () => {
+    setUser(null);
+    localStorage.removeItem("authToken");
+    localStorage.removeItem("user");
+    setActiveTab("dashboard");
+  };
 
   const navigateTo = (tab) => {
     setActiveTab(tab);
-    window.location.hash = tab;
-    if (tab !== "home") {
-      setShowAdminPanel(true);
-    }
   };
 
-  const navigateToHome = () => {
-    setActiveTab("home");
-    setShowAdminPanel(false);
-    window.location.hash = "home";
-  };
+  // Show loading spinner while checking auth
+  if (isLoading) {
+    return (
+      <div className="loading-screen">
+        <div className="loading-spinner"></div>
+        <p>Loading...</p>
+      </div>
+    );
+  }
 
+  // Show landing page if not authenticated
+  if (!user) {
+    return <LandingPage onLoginSuccess={handleLoginSuccess} />;
+  }
+
+  // Show dashboard if authenticated
   const renderContent = () => {
     switch (activeTab) {
-      case "home":
-        return <HomePage onNavigateToAdmin={() => navigateTo("dashboard")} />;
       case "dashboard":
         return <StatsCards />;
       case "events":
@@ -56,52 +79,51 @@ function App() {
       case "participants":
         return <ParticipantList />;
       default:
-        return <HomePage onNavigateToAdmin={() => navigateTo("dashboard")} />;
+        return <StatsCards />;
     }
   };
 
-  // Simple Header untuk Admin Panel
-  const AdminHeader = () => (
-    <Navbar bg="dark" variant="dark" expand="lg" className="shadow-sm">
-      <Container fluid>
-        <Navbar.Brand href="#home" onClick={navigateToHome} className="fw-bold cursor-pointer">
-          🎯 Event Management System
+  // Dashboard Header
+  const DashboardHeader = () => (
+    <Navbar bg="white" expand="lg" className="dashboard-header border-bottom">
+      <Container fluid className="px-3">
+        <Navbar.Brand href="#dashboard" className="fw-bold mb-0">
+          🎯 Event Management Dashboard
         </Navbar.Brand>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="ms-auto">
-            <Nav.Link href="#home" onClick={navigateToHome}>
-              🏠 Home
-            </Nav.Link>
-            <Nav.Link href="#dashboard" onClick={() => navigateTo("dashboard")}>
-              📊 Dashboard
-            </Nav.Link>
+            <div className="d-flex align-items-center">
+              <span className="user-info me-3 text-muted">
+                Welcome, <strong className="text-dark">{user.full_name}</strong>
+              </span>
+              <Button variant="outline-danger" size="sm" onClick={logout} className="logout-btn">
+                🚪 Logout
+              </Button>
+            </div>
           </Nav>
         </Navbar.Collapse>
       </Container>
     </Navbar>
   );
 
-  if (!showAdminPanel) {
-    return <HomePage onNavigateToAdmin={() => navigateTo("dashboard")} />;
-  }
-
   return (
-    <div className="min-vh-100 bg-light">
-      <AdminHeader />
-      <Container fluid>
-        <Row>
-          <Col xs={12} md={3} lg={2} className="p-0">
+    <div className="dashboard-app">
+      <DashboardHeader />
+
+      <Container fluid className="dashboard-container">
+        <Row className="g-0">
+          {" "}
+          {/* Remove gutters */}
+          {/* Sidebar Column */}
+          <Col xs={12} md={3} lg={2} className="sidebar-col">
             <Sidebar activeTab={activeTab} setActiveTab={navigateTo} />
           </Col>
-          <Col xs={12} md={9} lg={10} className="p-4">
-            <div className="mb-4">
-              {/* <Button variant="outline-primary" size="sm" onClick={navigateToHome} className="mb-3">
-                ← Back to Home
-              </Button> */}
-              <h4 className="text-capitalize">{activeTab} Management</h4>
+          {/* Main Content Column */}
+          <Col xs={12} md={9} lg={10} className="main-content-col">
+            <div className="main-content">
+              <div className="content-wrapper">{renderContent()}</div>
             </div>
-            {renderContent()}
           </Col>
         </Row>
       </Container>

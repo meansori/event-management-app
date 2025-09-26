@@ -9,23 +9,33 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
   ];
 
   return (
-    <div className="bg-light border-end" style={{ width: "250px", minHeight: "100vh" }}>
-      <Nav className="flex-column p-3">
+    <div className="sidebar">
+      <div className="sidebar-header">
+        <h6>Navigation Menu</h6>
+      </div>
+      <Nav className="flex-column">
         {menuItems.map((item) => (
           <Nav.Link
             key={item.key}
             href={`#${item.key}`}
-            className={`mb-2 rounded ${activeTab === item.key ? "bg-primary text-white" : "text-dark"}`}
+            className={`sidebar-link ${activeTab === item.key ? "active" : ""}`}
             onClick={(e) => {
               e.preventDefault();
               setActiveTab(item.key);
             }}
           >
-            <span className="me-2">{item.icon}</span>
-            {item.label}
+            <span className="sidebar-icon">{item.icon}</span>
+            <span className="sidebar-label">{item.label}</span>
           </Nav.Link>
         ))}
       </Nav>
+
+      {/* Additional sidebar content */}
+      <div className="sidebar-footer mt-auto p-3">
+        <div className="text-center">
+          <small className="text-muted">Event Management System v1.0</small>
+        </div>
+      </div>
     </div>
   );
 };
